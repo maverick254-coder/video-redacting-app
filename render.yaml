@@ -1,0 +1,27 @@
+services:
+  - type: docker
+    name: video-redaction-app
+    repo: https://github.com/maverick254-coder/video-redacting-app.git
+    branch: main
+    dockerfilePath: ./Dockerfile
+    port: 8000
+    
+    # Environment variables
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: YOLO_DEFAULT_DEVICE
+        value: "cpu"
+      - key: YOLO_MODEL_PATH
+        sync: false
+        # Optional: set to custom model path if needed
+        # value: "/path/to/custom/model.pt"
+    
+    # Resource configuration
+    plan: free  # Standard for paid, free for trial
+    
+    # Health check (optional, Render auto-checks HTTP)
+    healthCheckPath: /
+    
+    # Builds on every push to main
+    autoDeploy: true
