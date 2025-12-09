@@ -1,10 +1,12 @@
 services:
-  - type: docker
+  - type: web
     name: video-redaction-app
+    runtime: python-3.10
     repo: https://github.com/maverick254-coder/video-redacting-app.git
     branch: main
-    dockerfilePath: ./Dockerfile
-    port: 8000
+    
+    # Start command to run FastAPI with uvicorn
+    startCommand: uvicorn src.app:app --host 0.0.0.0 --port 8000
     
     # Environment variables
     envVars:
@@ -12,16 +14,6 @@ services:
         value: "1"
       - key: YOLO_DEFAULT_DEVICE
         value: "cpu"
-      - key: YOLO_MODEL_PATH
-        sync: false
-        # Optional: set to custom model path if needed
-        # value: "/path/to/custom/model.pt"
     
-    # Resource configuration
-    plan: free  # Standard for paid, free for trial
-    
-    # Health check (optional, Render auto-checks HTTP)
-    healthCheckPath: /
-    
-    # Builds on every push to main
+    # Auto-deploy on push to main
     autoDeploy: true
