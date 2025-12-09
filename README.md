@@ -32,7 +32,7 @@ A production-ready FastAPI application for automated video redaction using YOLO 
 
 ```powershell
 # Clone or download the repository
-cd "m:\video reduction tool"
+cd "path/to/video reduction tool"
 
 # Create virtual environment
 python -m venv .venv
