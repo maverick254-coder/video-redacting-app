@@ -1,0 +1,8 @@
+.venv/
+# Ignore artifacts and large files
+artifacts/
+yolov8n.pt
+__pycache__/
+*.pyc
+*.mp4
+*.jpg

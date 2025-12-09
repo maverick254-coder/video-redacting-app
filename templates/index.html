@@ -1,0 +1,340 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Video Redaction Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Montserrat', 'Roboto', Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #222;
+      }
+      .container {
+        max-width: 420px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 8px 32px rgba(30,60,114,0.18);
+        padding: 32px 28px 24px 28px;
+        animation: fadein 1s;
+      }
+      @keyframes fadein {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      h2 {
+        text-align: center;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 18px;
+        letter-spacing: 1px;
+      }
+      .form-group {
+        margin-bottom: 18px;
+      }
+      label {
+        font-weight: 500;
+        margin-bottom: 6px;
+        display: block;
+      }
+      input[type="file"] {
+        display: block;
+        margin-top: 6px;
+      }
+      fieldset {
+        border: none;
+        margin: 0 0 12px 0;
+        padding: 0;
+      }
+      legend {
+        font-size: 1.08em;
+        font-weight: 600;
+        color: #2a5298;
+        margin-bottom: 8px;
+      }
+      .checkbox-list label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 7px;
+        font-size: 0.98em;
+        cursor: pointer;
+      }
+      .checkbox-list input[type="checkbox"] {
+        accent-color: #2a5298;
+        margin-right: 8px;
+        transform: scale(1.2);
+      }
+      select, input[type="checkbox"] {
+        margin-right: 8px;
+      }
+      select {
+        padding: 5px 10px;
+        border-radius: 6px;
+        border: 1px solid #b0b8c1;
+        background: #f7f9fc;
+        font-size: 1em;
+      }
+      .options-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .options-row > div {
+        flex: 1;
+      }
+      .submit-btn {
+        width: 100%;
+        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+        color: #fff;
+        font-size: 1.1em;
+        font-weight: 700;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 0;
+        margin-top: 10px;
+        box-shadow: 0 2px 8px rgba(30,60,114,0.10);
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+      }
+      .submit-btn:hover {
+        background: linear-gradient(90deg, #2a5298 0%, #1e3c72 100%);
+        box-shadow: 0 4px 16px rgba(30,60,114,0.18);
+      }
+      #result {
+        margin-top: 24px;
+        text-align: center;
+        font-size: 1.08em;
+        min-height: 32px;
+      }
+      .icon {
+        color: #2a5298;
+        margin-right: 7px;
+        font-size: 1.1em;
+      }
+      @media (max-width: 600px) {
+        .container {
+          max-width: 98vw;
+          padding: 18px 8px 12px 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2><i class="fa-solid fa-shield-halved icon"></i>Video Redaction Tool</h2>
+      <form id="uploadForm" action="/redact-video" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="file"><i class="fa-solid fa-file-video icon"></i>Video file</label>
+          <input type="file" name="file" id="file" accept="video/*" required>
+        </div>
+
+        <fieldset class="form-group">
+          <legend><i class="fa-solid fa-eye-slash icon"></i>What to redact</legend>
+          <div class="checkbox-list">
+            <label><input type="checkbox" name="categories" value="faces"> Faces</label>
+            <label><input type="checkbox" name="categories" value="heads"> Heads / Hair</label>
+            <label><input type="checkbox" name="categories" value="people"> People</label>
+            <label><input type="checkbox" name="categories" value="license_plates"> License plates</label>
+            <label><input type="checkbox" name="categories" value="vehicles"> Vehicles (cars, bikes)</label>
+            <label><input type="checkbox" name="categories" value="screens"> Screens / monitors</label>
+            <label><input type="checkbox" name="categories" value="logos"> Logos</label>
+            <label><input type="checkbox" name="categories" value="signatures"> Signatures</label>
+          </div>
+        </fieldset>
+
+        <div class="options-row">
+          <div>
+            <label for="method"><i class="fa-solid fa-wand-magic-sparkles icon"></i>Redaction method</label>
+            <select name="method" id="method">
+              <option value="blur">Blur</option>
+              <option value="pixelate">Pixelate</option>
+              <option value="block">Black Box</option>
+            </select>
+          </div>
+          <div>
+            <label for="device"><i class="fa-solid fa-microchip icon"></i>Device</label>
+            <select name="device" id="device">
+              <option value="cpu">CPU</option>
+              <option value="cuda">CUDA (GPU)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="background"><i class="fa-solid fa-clock icon"></i>Process in background</label>
+          <input type="checkbox" name="background" id="background" value="true" checked>
+        </div>
+
+        <div class="form-group">
+          <label for="auto_download"><i class="fa-solid fa-arrow-down icon"></i>Auto-download when done</label>
+          <input type="checkbox" name="auto_download" id="auto_download" value="true">
+        </div>
+
+        <button type="submit" class="submit-btn"><i class="fa-solid fa-video icon"></i>Redact Video</button>
+      </form>
+      <div id="result"></div>
+    </div>
+
+    <script>
+      // Enhanced client: submits form, then polls job status automatically when background=true
+      const form = document.getElementById('uploadForm');
+      const result = document.getElementById('result');
+      let pollInterval = null;
+
+      function fmtSeconds(s) {
+        if (s == null) return '';
+        const sec = Math.round(s);
+        if (sec < 60) return `${sec}s`;
+        const m = Math.floor(sec / 60);
+        const r = sec % 60;
+        return `${m}m ${r}s`;
+      }
+
+      function showStatusMessage(html) {
+        result.innerHTML = html;
+      }
+
+      async function pollJob(jobId, statusUrl) {
+        // Poll every 2.5s
+        if (pollInterval) clearInterval(pollInterval);
+        async function check() {
+          try {
+            const res = await fetch(statusUrl);
+            if (!res.ok) {
+              showStatusMessage(`<span style="color:#c00"><i class="fa-solid fa-circle-exclamation icon"></i>Error fetching status (${res.status})</span>`);
+              clearInterval(pollInterval);
+              pollInterval = null;
+              return;
+            }
+            const j = await res.json();
+            // Build status UI
+            const status = j.status || 'unknown';
+            let html = `<div style="text-align:left;">`;
+            html += `<div style="margin-bottom:8px;"><strong>Status:</strong> <span style="color:#2a5298">${status.toUpperCase()}</span>`;
+            if (j.elapsed_seconds) html += ` &nbsp; <small>(${fmtSeconds(j.elapsed_seconds)})</small>`;
+            html += `</div>`;
+            if (j.error) html += `<div style="color:#c00;margin-bottom:8px;"><i class='fa-solid fa-circle-exclamation icon'></i>${j.error}</div>`;
+
+            if (status === 'done' && j.download_url) {
+              html += `<div style="margin:10px 0"><a id="download_link" href="${j.download_url}" class="submit-btn" style="display:inline-block; width:auto; padding:10px 16px;"> <i class='fa-solid fa-download'></i> Download Redacted Video</a></div>`;
+              if (j.thumbnails && j.thumbnails.length) {
+                html += `<div style="margin-top:8px;"><strong>Thumbnails</strong><div style='display:flex;gap:8px;margin-top:6px;'>`;
+                j.thumbnails.forEach((t, i) => {
+                  html += `<a href="${t}" target="_blank"><img src="${t}" style="width:100px;border-radius:6px;border:1px solid #eee;" alt="thumb${i}"></a>`;
+                });
+                html += `</div></div>`;
+              }
+              if (j.preview_url) {
+                html += `<div style="margin-top:10px;"><a href="${j.preview_url}" target="_blank" style="color:#2a5298;text-decoration:underline;">View preview clip</a></div>`;
+              }
+              showStatusMessage(html + '</div>');
+              // Auto-download if user opted in
+              try {
+                const auto = document.getElementById('auto_download');
+                if (auto && auto.checked) {
+                  // Trigger download by programmatically clicking the link
+                  const a = document.getElementById('download_link');
+                  if (a) {
+                    a.click();
+                  }
+                }
+              } catch (e) { /* ignore */ }
+              clearInterval(pollInterval);
+              pollInterval = null;
+              return;
+            }
+
+            // Running or queued
+            if (status === 'running') {
+              html += `<div style="margin-top:8px; display:flex; gap:8px; align-items:center;">Processing... <i class='fa-solid fa-spinner fa-spin'></i></div>`;
+              // Add cancel button
+              html += `<div style="margin-top:10px;"><button id="cancel_btn" style="background:#ff4d4f;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;"> <i class='fa-solid fa-ban'></i> Cancel Job</button></div>`;
+            } else if (status === 'queued') {
+              html += `<div style="margin-top:8px;">Queued — waiting to start</div>`;
+              html += `<div style="margin-top:10px;"><button id="cancel_btn" style="background:#ff4d4f;color:#fff;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;"> <i class='fa-solid fa-ban'></i> Cancel Job</button></div>`;
+            }
+
+            html += `<div style="margin-top:10px;font-size:0.92em;color:#555;">Job ID: <code>${jobId}</code></div>`;
+            html += `</div>`;
+            showStatusMessage(html);
+
+            // Wire up cancel button if present
+            const cancelBtn = document.getElementById('cancel_btn');
+            if (cancelBtn) {
+              cancelBtn.addEventListener('click', async () => {
+                try {
+                  cancelBtn.disabled = true;
+                  cancelBtn.innerText = 'Cancelling...';
+                  const cres = await fetch(`/jobs/${jobId}/cancel`, { method: 'POST' });
+                  if (!cres.ok) {
+                    const txt = await cres.text();
+                    alert('Failed to cancel job: ' + cres.status + ' ' + txt);
+                    cancelBtn.disabled = false;
+                    cancelBtn.innerText = 'Cancel Job';
+                    return;
+                  }
+                  // Update UI to reflect cancel request
+                  showStatusMessage(`<div style="color:#a00"><i class='fa-solid fa-ban icon'></i>Cancel requested for job <code>${jobId}</code>. Waiting for worker to stop...</div>`);
+                  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+                } catch (err) {
+                  alert('Error sending cancel request: ' + err.message);
+                  cancelBtn.disabled = false;
+                  cancelBtn.innerText = 'Cancel Job';
+                }
+              });
+            }
+          } catch (err) {
+            showStatusMessage(`<span style="color:#c00"><i class="fa-solid fa-circle-exclamation icon"></i>${err.message}</span>`);
+            if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+          }
+        }
+        // run immediately, then periodic
+        await check();
+        pollInterval = setInterval(check, 2500);
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        result.innerHTML = '<span style="color:#2a5298"><i class="fa-solid fa-spinner fa-spin"></i> Submitting...</span>';
+        const fd = new FormData(form);
+        if (!fd.has('background')) fd.append('background','false');
+        try {
+          const res = await fetch('/redact-video', { method: 'POST', body: fd });
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const j = await res.json();
+            if (j.job_id) {
+              // Start polling the returned status URL
+              const statusUrl = j.status_url || (`/jobs/${j.job_id}`);
+              showStatusMessage(`<span style="color:#1e3c72"><i class="fa-solid fa-hourglass-half icon"></i>Job queued:</span> <b>${j.job_id}</b><br><small style="color:#555">Auto-polling status...</small>`);
+              pollJob(j.job_id, statusUrl);
+            } else if (j.error) {
+              showStatusMessage(`<span style="color:#c00"><i class="fa-solid fa-circle-exclamation icon"></i>Error:</span> ${j.error}`);
+            } else {
+              showStatusMessage(JSON.stringify(j));
+            }
+          } else {
+            // assume file response (download)
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'output_redacted.mp4';
+            a.innerHTML = '<i class="fa-solid fa-download icon"></i>Download processed video';
+            result.innerHTML = '';
+            result.appendChild(a);
+          }
+        } catch (err) {
+          showStatusMessage(`<span style="color:#c00"><i class="fa-solid fa-circle-exclamation icon"></i>${err.message}</span>`);
+        }
+      });
+    </script>
+  </body>
+</html>
