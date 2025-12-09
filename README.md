@@ -107,46 +107,7 @@ uvicorn src.app:app --host 0.0.0.0 --port 8000
 | **Pixelate** | Downscales region 16x then upscales back | Mosaic/pixelated look |
 | **Block** | Fills region with solid black rectangle | Maximum opacity |
 
-### Processing Modes
 
-#### Synchronous (Blocking)
-
-- Form submission with `background = false`
-- Server processes immediately, client waits
-- Returns MP4 file when complete
-- Suitable for short videos or when instant feedback needed
-
-#### Asynchronous (Background Job)
-
-- Form submission with `background = true` (default)
-- Server returns immediately with `job_id`
-- Client polls `GET /jobs/{job_id}` for status
-- When `status = 'done'`, download via provided URLs
-- Suitable for long videos and non-blocking UX
-
-### Job Lifecycle
-
-```
-submitted (background=true)
-    ↓
-create_job() → returns job_id
-    ↓
-worker thread starts: status = 'queued'
-    ↓
-load YOLO model: status = 'running'
-    ↓
-redact_video() runs frame-by-frame
-    ↓
-generate thumbnails (3 JPEG images)
-    ↓
-generate preview (first 3 seconds at ≤10 fps)
-    ↓
-status = 'done' (or 'failed' on error)
-    ↓
-client downloads via /jobs/{job_id}/download
-client views preview via /jobs/{job_id}/preview
-client views thumbnails via /jobs/{job_id}/thumbnail/{0,1,2}
-```
 
 ## Web Interface
 
@@ -176,67 +137,8 @@ client views thumbnails via /jobs/{job_id}/thumbnail/{0,1,2}
 - Copy status URL to check job progress
 - Navigate to `/jobs/{job_id}` for live status updates with download/preview links
 
-## API Endpoints
 
-### Web Interface
 
-**GET /**
-- Returns HTML form for video upload
-- Includes category checkboxes, method/device selectors, background toggle
-
-### Upload & Processing
-
-**POST /redact-video**
-- Accepts: multipart form data
-  - `file`: Video file (required)
-  - `method`: blur | pixelate | block (default: blur)
-  - `categories`: List of category names (optional, default: all)
-  - `background`: true | false (default: true)
-  - `device`: cpu | cuda (default: cpu)
-- Returns (sync): FileResponse with MP4 (status 200)
-- Returns (async): JSON `{"job_id": "...", "status_url": "/jobs/..."}` (status 200)
-- Errors: 400 (bad request), 500 (server error)
-
-### Job Status & Downloads
-
-**GET /jobs/{job_id}**
-- Returns: JSON with job status, timing, and artifact URLs
-- Status values: `queued`, `running`, `done`, `failed`
-- When done, includes: `download_url`, `thumbnails[]`, `preview_url`
-- Errors: 404 (job not found)
-
-**GET /jobs/{job_id}/download**
-- Returns: FileResponse with redacted MP4 video
-- Errors: 404 (job not found), 400 (not done yet), 410 (file deleted)
-
-**GET /jobs/{job_id}/thumbnail/{index}**
-- Returns: FileResponse with JPEG thumbnail (index 0, 1, or 2)
-- Errors: 404 (job/thumbnail not found), 410 (file deleted)
-
-**GET /jobs/{job_id}/preview**
-- Returns: FileResponse with MP4 preview clip (first ~3 seconds)
-- Errors: 404 (job/preview not found), 410 (file deleted)
-
-### Metadata
-
-**GET /api/categories**
-- Returns: JSON `{"categories": ["faces", "people", ...]}`
-- Lists available redaction category options
-
-## Project Structure
-
-```
-video reduction tool/
-├── src/
-│   ├── app.py              # FastAPI application and endpoints
-│   ├── models.py           # YOLO model loading with device management
-│   ├── processor.py        # Core redaction pipeline (frame loop, inference, redaction)
-│   └── jobs.py             # Background job manager with threading
-├── templates/
-│   └── index.html          # Web form UI with category checkboxes and controls
-├── requirements.txt        # Python package dependencies
-└── README.md              # This file
-```
 
 ### Module Documentation
 
@@ -268,7 +170,6 @@ video reduction tool/
 - Comprehensive error handling and validation
 - Logging of all requests and operations
 
-## Example Usage
 
 ### Using the Web Interface
 
@@ -282,38 +183,6 @@ video reduction tool/
 8. Poll the status URL until `status = 'done'`
 9. Click "Download Redacted Video" to download output
 
-### Using curl (Sync Mode)
-
-```bash
-curl -X POST http://localhost:8000/redact-video \
-  -F "file=@input.mp4" \
-  -F "method=blur" \
-  -F "categories=people" \
-  -F "categories=license_plates" \
-  -F "background=false" \
-  -F "device=cpu" \
-  -o output_redacted.mp4
-```
-
-### Using curl (Async Mode)
-
-```bash
-# Submit job
-curl -X POST http://localhost:8000/redact-video \
-  -F "file=@input.mp4" \
-  -F "method=blur" \
-  -F "categories=people" \
-  -F "background=true" \
-  -F "device=cuda"
-
-# Response: {"job_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "status_url": "/jobs/..."}
-
-# Check status
-curl http://localhost:8000/jobs/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-
-# Download when done
-curl http://localhost:8000/jobs/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/download -o output.mp4
-```
 
 ## Performance Notes
 
@@ -356,11 +225,5 @@ curl http://localhost:8000/jobs/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/download -o
 - Use smaller YOLO model (nano vs small/medium)
 - Reduce video resolution (use ffmpeg to downscale)
 
-## License
 
-[Your License Here]
-
-## Contributing
-
-[Contribution guidelines here]
 
